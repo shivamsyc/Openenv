@@ -1,0 +1,6 @@
+openai
+asyncio
+python-dotenv
+# Add any other libraries your 
+MyEnvV4Env needs here
+
