@@ -36,7 +36,8 @@ class ExpenseEnv(Environment):
     def __init__(self, filename="expenses.csv"):
         super().__init__()
         self._state = ExpenseState(filename=filename)
-        # Ensure file exists with headers if new
+
+    
         if not os.path.exists(filename):
             with open(filename, 'w', newline='') as f:
                 csv.writer(f).writerow(["Date", "Category", "Amount"])
@@ -52,9 +53,9 @@ class ExpenseEnv(Environment):
         def step(self, action: ExpenseAction):
         self._state.last_action_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # ... keep your logging logic here ...
+        
 
-        # At the end, create your observation
+        
         obs = ExpenseObservation(
             message=f"Logged ${action.amount}",
             current_total=self._get_total(),
