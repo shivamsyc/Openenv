@@ -1,3 +1,4 @@
+# Force trigger run 8
 name: Sync to Hugging Face hub
 on:
   push:
@@ -13,6 +14,4 @@ jobs:
           fetch-depth: 0
           lfs: true
       - name: Push to hub
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push -f https://shivamsyc:$HF_TOKEN@huggingface.co/spaces/shivamsyc/OpenEnv main
+        run: git push -f https://shivamsyc:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/shivamsyc/OpenEnv main
