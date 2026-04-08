@@ -49,31 +49,25 @@ class ExpenseEnv(Environment):
             success=True
         )
 
-    def step(self, action: ExpenseAction) -> ExpenseObservation:
+        def step(self, action: ExpenseAction):
         self._state.last_action_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        if action.command == "log":
-            try:
-                with open(self._state.filename, mode='a', newline='') as file:
-                    writer = csv.writer(file)
-                    writer.writerow([self._state.last_action_time, action.category, action.amount])
-                return ExpenseObservation(
-                    message=f"Logged ${action.amount} for {action.category}",
-                    current_total=self._get_total(),
-                    success=True
-                )
-            except Exception as e:
-                return ExpenseObservation(message=str(e), current_total=self._get_total(), success=False)
+        # ... keep your logging logic here ...
 
-        elif action.command == "view_total":
-            return ExpenseObservation(
-                message="Retrieved total spending.",
-                current_total=self._get_total(),
-                success=True
-            )
+        # At the end, create your observation
+        obs = ExpenseObservation(
+            message=f"Logged ${action.amount}",
+            current_total=self._get_total(),
+            success=True
+        )
 
-        return ExpenseObservation(message="Unknown Command", current_total=self._get_total(), success=False)
+        # Calculate reward and check if done (Step 2/3 logic)
+        reward = 1.0 if obs.success else 0.0
+        done = False  # The orchestrator usually decides when the task is finished
+        info = {}     # Extra data if needed
 
+        return obs, reward, done, info
+        
     def _get_total(self) -> float:
         total = 0.0
         try:
