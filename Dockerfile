@@ -8,6 +8,8 @@ RUN useradd -m -u 1000 user
 USER user
 ENV HOME=/home/user PATH=/home/user/.local/bin:$PATH
 WORKDIR $HOME/app
+ENV PYTHONPATH=$HOME/app
+
 
 # 1. Install OpenEnv SDK directly (Ensures no "Module Not Found" error)
 RUN pip install --no-cache-dir openenv-core pydantic asyncio uvicorn
