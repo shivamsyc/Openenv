@@ -1,12 +1,4 @@
-!pip install -q openenv-core
-!git clone --depth=1 -q https://github.com/meta-pytorch/OpenEnv.git 2>/dev/null || true
 
-import sys, os
-repo = os.path.abspath('OpenEnv')
-for p in [repo, os.path.join(repo, 'src')]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
-print("Setup complete!")
 
 
 1. Define the Data Models
