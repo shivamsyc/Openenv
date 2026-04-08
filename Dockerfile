@@ -1,21 +1,26 @@
 FROM python:3.10-slim
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Set up user
+# Hugging Face User Setup (Crucial for permissions)
 RUN useradd -m -u 1000 user
 USER user
 ENV HOME=/home/user PATH=/home/user/.local/bin:$PATH
 WORKDIR $HOME/app
 
-# Install dependencies
-RUN pip install --no-cache-dir openenv-core pydantic asyncio
+# 1. Install OpenEnv SDK directly (Ensures no "Module Not Found" error)
+RUN pip install --no-cache-dir openenv-core pydantic asyncio uvicorn
 
-COPY --chown=user requirements.txt $HOME/app/requirements.txt
+# 2. Install your other requirements
+COPY --chown=user requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --chown=user . $HOME/app
+# 3. Copy your project files (env_module.py, openenv.yaml, etc.)
+COPY --chown=user . .
 
-# IMPORTANT: This runs the server so the "Reset" POST command works
+# 4. Port for Hugging Face
+EXPOSE 7860
+
+# 5. Start the CORRECT server for the Hackathon
 CMD ["python", "-m", "openenv.core.server", "--host", "0.0.0.0", "--port", "7860"]
