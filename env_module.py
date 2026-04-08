@@ -1,104 +1,60 @@
 import asyncio
-import os
-import textwrap
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import Optional
 
-from openai import OpenAI
-from env_module import ExpenseAction, ExpenseEnv
+@dataclass
+class ExpenseObservation:
+    message: str
+    current_total: float
+    success: bool
 
+@dataclass
+class ExpenseAction:
+    command: str
+    category: str = "General"
+    amount: float = 0.0
 
-# Environment Configuration
-IMAGE_NAME = os.getenv("IMAGE_NAME") or os.getenv("LOCAL_IMAGE_NAME")
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+@dataclass
+class ExpenseStepResult:
+    observation: ExpenseObservation
+    reward: float
+    done: bool
 
-# API Defaults
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+class ExpenseEnv:
+    def __init__(self):
+        self.total = 0.0
+        self.steps = 0
+        self.max_steps = 10
 
-# Benchmark Configuration
-TASK_NAME = os.getenv("MY_ENV_V4_TASK", "echo")
-BENCHMARK = os.getenv("MY_ENV_V4_BENCHMARK", "my_env_v4")
-MAX_STEPS = 8
-TEMPERATURE = 0.7
-MAX_TOKENS = 150
-SUCCESS_SCORE_THRESHOLD = 0.1  # normalized score in [0, 1]
+    @classmethod
+    async def from_docker_image(cls, image_name: Optional[str] = None):
+        return cls()
 
-# Max possible reward calculation for reproducibility/normalization
-_MAX_REWARD_PER_STEP = MAX_TOKENS * 0.1
-MAX_TOTAL_REWARD = MAX_STEPS * _MAX_REWARD_PER_STEP
-
-
-def log_start(task: str, env: str, model: str) -> None:
-    """Emits the mandated [START] line."""
-    print(f"[START] task={task} env={env} model={model}", flush=True)
-
-
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
-    """Emits the mandated [STEP] line with lowercase booleans and 2f floats."""
-    error_val = error if error else "null"
-    done_val = str(done).lower()
-    print(
-        f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
-        flush=True,
-    )
-
-
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    """Emits the mandated [END] line with lowercase booleans and required scoring."""
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    success_val = str(success).lower()
-    print(
-        f"[END] success={success_val} steps={steps} score={score:.2f} rewards={rewards_str}", 
-        flush=True
-    )
-
-
-def build_user_prompt(step: int, last_echoed: str, last_reward: float, history: List[str]) -> str:
-    """Builds a structured prompt for the LLM to understand environment state."""
-    history_block = "\n".join(history[-4:]) if history else "None"
-    return textwrap.dedent(
-        f"""
-        Step: {step}
-        Last echoed message: {last_echoed!r}
-        Last reward: {last_reward:.2f}
-        Previous steps:
-        {history_block}
-        Send your next message.
-        """
-    ).strip()
-
-
-def get_model_message(client: OpenAI, step: int, last_echoed: str, last_reward: float, history: List[str]) -> str:
-    """Calls the required OpenAI Client to get the next environment action."""
-    user_prompt = build_user_prompt(step, last_echoed, last_reward, history)
-    try:
-        completion = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=TEMPERATURE,
-            max_tokens=MAX_TOKENS,
-            stream=False,
+    async def reset(self) -> ExpenseStepResult:
+        self.total = 0.0
+        self.steps = 0
+        return ExpenseStepResult(
+            observation=ExpenseObservation("System Reset", 0.0, True),
+            reward=0.0,
+            done=False
         )
-        text = (completion.choices[0].message.content or "").strip()
-        # Clean up any quotes the model might have accidentally wrapped its response in
-        return text.strip('"').strip("'") if text else "hello"
-    except Exception as exc:
-        print(f"[DEBUG] Model request failed: {exc}", flush=True)
-        return "hello"
 
+    async def step(self, action: ExpenseAction) -> ExpenseStepResult:
+        self.steps += 1
+        self.total += action.amount
+        
+        # Simple reward logic based on your prompt
+        reward = 0.1 if action.amount > 0 else 0.05
+        done = self.steps >= self.max_steps
+        
+        return ExpenseStepResult(
+            observation=ExpenseObservation(f"Executed {action.command}", self.total, True),
+            reward=reward,
+            done=done
+        )
 
-SYSTEM_PROMPT = textwrap.dedent(
-    """
-    You are interacting with a simple echo environment.
-    Each turn you must send a message. The environment will echo it back.
-    Reward is proportional to message length: reward = len(message) * 0.1
-    Your goal is to maximize total reward by sending meaningful, substantive messages.
-    Reply with exactly one message string — no quotes, no prefixes, just the message text.
-    """
-).strip()
+    async def close(self):
+        pass
 
 
 async def main() -> None:
