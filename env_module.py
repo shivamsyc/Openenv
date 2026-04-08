@@ -102,8 +102,3 @@ action_1 = ExpenseAction(command="log", category="Food", amount=5.50)
 obs_1 = env.step(action_1)
 print(f"Action 1: {obs_1.message} | New Total: ${obs_1.current_total}")
 
-# 3. Agent takes an action: Log Transport
-action_2 = ExpenseAction(command="log", category="Transport", amount=15.00)
-obs_2 = env.step(action_2)
-print(f"Action 2: {obs_2.message} | New Total: ${obs_2.current_total}")
-
