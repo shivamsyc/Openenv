@@ -4,7 +4,8 @@ import textwrap
 from typing import List, Optional
 
 from openai import OpenAI
-from my_env_v4 import MyEnvV4Action, MyEnvV4Env
+from env_module import ExpenseAction, ExpenseEnv
+
 
 # Environment Configuration
 IMAGE_NAME = os.getenv("IMAGE_NAME") or os.getenv("LOCAL_IMAGE_NAME")
