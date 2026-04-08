@@ -1,0 +1,104 @@
+
+
+# OpenEnv Environment Specification
+version: "1.0"
+
+environments:
+  - id: "ExpenseTracker-v1"
+    entry_point: "env_module:ExpenseEnv" # Assumes your code is in env_module.py
+    description: "A real-world task for logging and managing CSV-based expenses."
+    
+    # Define the schemas for the agent to understand the interface
+    action_space:
+      type: "ExpenseAction"
+      parameters:
+        command: "string (log | view_total)"
+        category: "string"
+        amount: "float"
+    
+    observation_space:
+      type: "ExpenseObservation"
+      parameters:
+        message: "string"
+        current_total: "float"
+        success: "boolean"
+
+    # Define the 3 required tasks (Easy -> Medium -> Hard)
+    tasks:
+      - id: "log_single_coffee"
+        difficulty: "easy"
+        goal: "Log an expense of $5.50 for 'Food'."
+        max_steps: 2
+        
+      - id: "multi_log_verify"
+        difficulty: "medium"
+        goal: "Log $10.00 for 'Travel' and $20.00 for 'Work', then verify the total is $30.00."
+        max_steps: 5
+        
+      - id: "reconcile_and_tax"
+        difficulty: "hard"
+        goal: "Find all 'Food' entries, calculate a 10% tax, and log a new entry called 'Tax' with that amount."
+        max_steps: 10
+
+For the YAML to actually work, your Python code needs to be structured as a package. Ensure your environment class and models are in a file named env_module.py
+ 
+Reward Signal:
+def step(self, action: ExpenseAction):
+    # ... your existing logic ...
+    
+    obs = ExpenseObservation(
+        message=msg,
+        current_total=self._get_total(),
+        success=True
+    )
+    
+    # Item #4: Meaningful reward function
+    # Reward 0.1 for a successful command, 0.0 for failure
+    reward = 0.1 if obs.success else -0.1
+    
+    # Check if a task is complete (this links to the Graders we need to build next)
+    done = False 
+    
+    return obs, reward, done, {}
+
+
+#  Implementing Graders and Partial Rewards
+
+def get_task_progress(self):
+    """
+    Calculates how close the agent is to completing the task.
+    Returns a float between 0.0 and 1.0.
+    """
+    # Example for an expense tracking task:
+    # If the goal is to log 4 specific expenses, and the agent has logged 2:
+    # progress = 2 / 4 = 0.5
+    total_subtasks = 4.0
+    completed_subtasks = self._get_completed_subtasks_count() 
+    
+    return completed_subtasks / total_subtasks
+
+
+def step(self, action: ExpenseAction):
+    # ... your existing logic execution ...
+    
+    obs = ExpenseObservation(
+        message=msg,
+        current_total=self._get_total(),
+        success=True # Assuming action execution was valid
+    )
+    
+    # 1. Graders / Task Completion
+    # Pulling the progress score (0.0 to 1.0)
+    progress_score = self.get_task_progress()
+    
+    # 2. Meaningful Reward with Partial Signals
+    if not obs.success:
+        reward = -0.1  # Penalty for bad actions
+    else:
+        # Base reward for a valid action + bonus for pushing the task forward
+        reward = 0.05 + (progress_score * 0.5) 
+        
+    # Check if task is fully complete
+    done = True if progress_score >= 1.0 else False
+    
+    return obs, reward, done, {}
