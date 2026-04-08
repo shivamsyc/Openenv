@@ -1,59 +1,41 @@
 import asyncio
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional
+
+# These MUST be imported for the server to recognize them
+from openenv.core.env_server import Action, Observation, State
 
 @dataclass
-class MyEnvV4Observation:
-    echoed_message: str
-
-@dataclass
-class MyEnvV4Action:
+class ExpenseObservation:
     message: str
+    current_total: float
+    success: bool
 
 @dataclass
-class MyEnvV4StepResult:
-    observation: MyEnvV4Observation
-    reward: float
-    done: bool
-    last_action_error: Optional[str] = None
+class ExpenseAction:
+    command: str
+    category: str = "General"
+    amount: float = 0.0
 
-class MyEnvV4Env:
+class ExpenseEnv: # This name MUST match openenv.yaml
     def __init__(self):
+        self.total = 0.0
         self.steps = 0
-        self.max_steps = 8
-        self.done = False
+        self.max_steps = 10
 
-    @classmethod
-    async def from_docker_image(cls, image_name: Optional[str] = None):
-        """Standard OpenEnv factory method."""
-        return cls()
-
-    async def reset(self) -> MyEnvV4StepResult:
-        """Resets the environment to initial state."""
+    def reset(self):
+        self.total = 0.0
         self.steps = 0
-        self.done = False
-        return MyEnvV4StepResult(
-            observation=MyEnvV4Observation(echoed_message="Welcome!"),
-            reward=0.0,
-            done=False
-        )
+        # Return: obs, reward, done, info
+        return ExpenseObservation("Reset complete", 0.0, True), 0.0, False, {}
 
-    async def step(self, action: MyEnvV4Action) -> MyEnvV4StepResult:
-        """Processes the LLM's message and returns reward."""
+    def step(self, action: ExpenseAction):
         self.steps += 1
+        self.total += action.amount
+        done = self.steps >= self.max_steps
+        obs = ExpenseObservation(f"Logged {action.amount}", self.total, True)
+        return obs, 1.0, done, {}
         
-        # Logic: Reward is length of message * 0.1
-        msg_len = len(action.message)
-        reward = msg_len * 0.1
-        
-        if self.steps >= self.max_steps:
-            self.done = True
-            
-        return MyEnvV4StepResult(
-            observation=MyEnvV4Observation(echoed_message=action.message),
-            reward=reward,
-            done=self.done
-        )
 
     async def close(self):
         """Cleanup logic."""
