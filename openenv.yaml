@@ -1,34 +1,22 @@
 version: "1.0"
-
 environments:
   - id: "ExpenseTracker-v1"
     entry_point: "env_module:ExpenseEnv"
-    description: "Expense tracking environment for the OpenEnv Hackathon."
-    
+    description: "Expense tracking environment."
     action_space:
       type: "ExpenseAction"
       parameters:
         command: "string"
         category: "string"
         amount: "float"
-    
     observation_space:
       type: "ExpenseObservation"
       parameters:
         message: "string"
         current_total: "float"
         success: "boolean"
-
     tasks:
       - id: "log_single_coffee"
         difficulty: "easy"
         goal: "Log an expense of $5.50 for 'Food'."
         max_steps: 2
-      - id: "multi_log_verify"
-        difficulty: "medium"
-        goal: "Log $10.00 for 'Travel' and $20.00 for 'Work', then verify the total is $30.00."
-        max_steps: 5
-      - id: "reconcile_and_tax"
-        difficulty: "hard"
-        goal: "Find all 'Food' entries, calculate a 10% tax, and log a new entry called 'Tax' with that amount."
-        max_steps: 10
