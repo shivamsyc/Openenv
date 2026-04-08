@@ -1,13 +1,12 @@
-
-
 # OpenEnv Environment Specification
 version: "1.0"
 
 environments:
   - id: "ExpenseTracker-v1"
-    entry_point: "env_module:ExpenseEnv" # Assumes your code is in env_module.py
-    description: "A real-world task for logging and managing CSV-based expenses."
+    entry_point: "env_module:ExpenseEnv"
+    description: "Expense tracking environment for the OpenEnv Hackathon."
     
+
 
     action_space:
       type: "ExpenseAction"
