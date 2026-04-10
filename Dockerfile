@@ -1,28 +1,24 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
-# System dependencies
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# 1. Install 'uv' – the tool your friend is using
+RUN pip install --no-cache-dir uv
 
-# Hugging Face User Setup (Crucial for permissions)
-RUN useradd -m -u 1000 user
-USER user
-ENV HOME=/home/user PATH=/home/user/.local/bin:$PATH
-WORKDIR $HOME/app
-ENV PYTHONPATH=$HOME/app
+WORKDIR /code
 
+# 2. Copy your configuration files
+COPY pyproject.toml .
+COPY requirements.txt .
 
-# 1. Install OpenEnv SDK directly (Ensures no "Module Not Found" error)
-RUN pip install --no-cache-dir openenv-core pydantic asyncio uvicorn
+# 3. Generate the lock file during the build
+RUN uv lock
 
-# 2. Install your other requirements
-COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 4. Install everything using the new lock file
+RUN uv pip install --system -r requirements.txt
 
-# 3. Copy your project files (env_module.py, openenv.yaml, etc.)
-COPY --chown=user . .
+# 5. Copy the rest of your code
+COPY . .
 
-# 4. Port for Hugging Face
-EXPOSE 7860
+ENV PYTHONPATH=/code
 
-# 5. Start the CORRECT server for the Hackathon
-CMD ["python", "-m", "openenv.core.server", "--host", "0.0.0.0", "--port", "7860"]
+# 6. Launch
+CMD ["python3", "app.py"]
