@@ -1,11 +1,8 @@
-title: OpenEnv1
-emoji: 🚀
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
+---
+title: OpenEnv
 license: mit
+---
+
 📊 OpenEnv1: Expense Tracker Environment
 This Space provides a Dockerized Reinforcement Learning environment for tracking expenses. It is built using the openenv-core framework and serves as a backend for AI agents to practice structured data logging.
 
